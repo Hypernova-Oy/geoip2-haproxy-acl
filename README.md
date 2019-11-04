@@ -48,7 +48,7 @@ Add the following cronjob if you wish to stay up to date (replace `/path/to/`
 with your script path). It pulls latest updates every Wednesday at 06:00 AM.
 
 ``
-0 6 * * 3 bash -c '/path/to/generate.sh && /bin/systemctl reload haproxy'
+0 6 * * 3 bash -c 'cd /path/to/geoip2-haproxy-acl && /path/to/geoip2-haproxy-acl/generate.sh && /bin/systemctl reload haproxy'
 ``
 
 ## License
