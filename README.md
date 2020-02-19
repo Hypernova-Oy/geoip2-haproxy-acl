@@ -20,12 +20,18 @@ compatible with HAProxy ACL (Access Control Lists).
 
 ## Usage
 
+### MaxMind License Key
+
+Since 2020, MaxMind now requires a registration in order to download free GeoIP2 databases.
+
+Register at maxmind.com, go to "My account" -> "My License Keys" and generate a new license key.
+
 ### Pull latest GeoIP2 data
 ```
 git clone https://github.com/Hypernova-Oy/geoip2-haproxy-acl.git
 cd geoip2-haproxy-acl
 mkdir -p /etc/haproxy/geoip2
-./generate.sh --out /etc/haproxy/geoip2
+./generate.sh --license YOUR_MAXMIND_FREE_LICENSE_KEY --out /etc/haproxy/geoip2
 ```
 
 This script generates a directory `subnets` under project root.
@@ -49,7 +55,7 @@ Add the following cronjob if you wish to stay up to date (replace `/path/to/`
 with your script path). It pulls latest updates every Wednesday at 06:00 AM.
 
 ``
-0 6 * * 3 bash -c '/path/to/geoip2-haproxy-acl/generate.sh --out /etc/haproxy/geoip2 && /bin/systemctl reload haproxy'
+0 6 * * 3 bash -c '/path/to/geoip2-haproxy-acl/generate.sh --license YOUR_MAXMIND_FREE_LICENSE_KEY --out /etc/haproxy/geoip2 && /bin/systemctl reload haproxy'
 ``
 
 ## License
