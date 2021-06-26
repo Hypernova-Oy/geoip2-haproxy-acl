@@ -1,40 +1,30 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-COUNTRIES="countries"
-COUNTRIES_ZIP="${COUNTRIES}.zip"
+COUNTRIES="/tmp/countries"
+COUNTRIES_ZIP="/var/cache/geoip/countries.zip"
 SUBNETS="subnets"
 YOUR_LICENSE_KEY=""
 
-while :; do
+while [[ $# -gt 0 ]]; do
     case $1 in
-        -h|-\?|--help)   # Call a "show_help" function to display a synopsis, then exit.
+        -o|--out)        # Output directory of subnets
+            SUBNETS="$2"
+            shift
+            shift
+            ;;
+        --license)        # Your MaxMind license key
+            YOUR_LICENSE_KEY="$2"
+            shift
+            shift
+            ;;
+        *)   # Call a "show_help" function to display a synopsis, then exit.
             echo "./generate.sh --license YOUR_LICENSE_KEY --out /etc/haproxy/geoip2"
             echo ""
             echo "--out          Output directory for subnets"
             echo "--license      A MaxMind.com license key. Get it from maxmind.com -> My Account -> My License Key"
-            exit
+            exit 1
             ;;
-        -o|--out)        # Output directory of subnets
-            SUBNETS=$2
-            ;;
-        --out=?*)
-            SUBNETS=${1#*=}
-            ;;
-        --license)        # Your MaxMind license key
-            YOUR_LICENSE_KEY=$2
-            ;;
-        --)
-            shift
-            break
-            ;;
-        -?*)
-            printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
-            ;;
-        *)
-            break
     esac
-
-    shift
 done
 
 if [ -z $YOUR_LICENSE_KEY ]; then
@@ -42,24 +32,34 @@ if [ -z $YOUR_LICENSE_KEY ]; then
     exit 1;
 fi
 
-wget -q -O $COUNTRIES_ZIP "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$YOUR_LICENSE_KEY&suffix=zip"
+# make sure the zip file exists and is recent enough to use
+if [ ! $(find $COUNTRIES_ZIP -mtime -7 2>/dev/null) ]; then
+    # remove it if it exists
+    rm -f $COUNTRIES_ZIP
 
-if [ "$?" != 0 ]; then
-    echo "Error downloading file"
-    exit 1
+    # download a new copy
+    echo "Downloading https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=xxxxx&suffix=zipGeoLite2-Country-CSV..."
+    wget -q -O $COUNTRIES_ZIP "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$YOUR_LICENSE_KEY&suffix=zip"
+
+    # abort the script if the download failed
+    if [ "$?" != 0 ]; then
+        echo "Error downloading file"
+        exit 1
+    fi
 fi
 
 unzip -qq -o $COUNTRIES_ZIP
 
-cp -r GeoLite2-Country-CSV_* $COUNTRIES
-rm -rf GeoLite2-Country-CSV_*
+rm -rf $COUNTRIES
+mv GeoLite2-Country-CSV_* $COUNTRIES
 
 mkdir -p $SUBNETS
-rm $SUBNETS/*.txt # delete old entries
+rm -f $SUBNETS/*.txt # delete old entries
 
+echo "Generating files:"
 # generate subnets/COUNTRYCODE.txt files and fill it with subnets
 IFS=","
-while read geoname_id locale_code continent_code continent_name country_iso_code country_name is_in_european union
+while read geoname_id locale_code continent_code continent_name country_iso_code country_name is_in_european_union
 do
     if [ ! "$country_iso_code" ]; then
         continue
@@ -70,20 +70,16 @@ do
     fi
 
     # IPv4
-    for v in $(cat $COUNTRIES/GeoLite2-Country-Blocks-IPv4.csv | grep $geoname_id | sed "s/,.*$//g" | awk "{print $1}")
+    for v in $(cat $COUNTRIES/GeoLite2-Country-Blocks-IPv4.csv | grep $geoname_id | sed "s/,.*$//g" | awk "{print \$1}")
     do
         echo "$v" >> "${SUBNETS}/${country_iso_code}.txt"
     done
 
-    # IPv6
-    for v in $(cat $COUNTRIES/GeoLite2-Country-Blocks-IPv6.csv | grep $geoname_id | sed "s/,.*$//g" | awk "{print $1}")
-    do
-        echo "$v" >> "${SUBNETS}/${country_iso_code}.txt"
-    done
+    echo "${SUBNETS}/${country_iso_code}.txt"
 done < $COUNTRIES/GeoLite2-Country-Locations-en.csv
 
-# clean up
-rm $COUNTRIES_ZIP
 rm -rf $COUNTRIES
+
+echo "Done."
 
 exit 0
