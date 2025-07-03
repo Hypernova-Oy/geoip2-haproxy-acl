@@ -6,7 +6,7 @@ Downloads GeoLite2 country csv and splits it into per-country files. Output is
 compatible with HAProxy ACL (Access Control Lists).
 
 ```
-./subnets
+./etc/haproxy/geoip2
  |- AD.txt
  |- AE.txt
  |- ...
@@ -22,7 +22,7 @@ compatible with HAProxy ACL (Access Control Lists).
 
 ### MaxMind License Key
 
-Since 2020, MaxMind now requires a registration in order to download free GeoIP2 databases.
+MaxMind requires you to register an user account in order to download free GeoIP2 databases.
 
 Register at maxmind.com, go to "My account" -> "My License Keys" and generate a new license key.
 
@@ -31,10 +31,8 @@ Register at maxmind.com, go to "My account" -> "My License Keys" and generate a 
 git clone https://github.com/Hypernova-Oy/geoip2-haproxy-acl.git
 cd geoip2-haproxy-acl
 mkdir -p /etc/haproxy/geoip2
-./generate.sh --license YOUR_MAXMIND_FREE_LICENSE_KEY --out /etc/haproxy/geoip2
+./generate.sh --accountid YOUR_MAXMIND_FREE_ACCOUNT_ID --license YOUR_MAXMIND_FREE_LICENSE_KEY --out /etc/haproxy/geoip2
 ```
-
-This script generates a directory `subnets` under project root.
 
 ### Add ACL to HAProxy
 ```
@@ -45,17 +43,17 @@ http-request deny if !acl_CN
 http-request deny if !acl_US
 ```
 
-the above example rejects connections from China and the United States.
+The above example rejects connections from China and the United States.
 
 ### Cron
 
-GeoLite2 Country database is [updated weekly, every Tuesday](https://dev.maxmind.com/geoip/geoip2/geolite2/).
+GeoLite2 Country database is [updated weekly, every Tuesday and Friday](https://support.maxmind.com/hc/en-us/articles/4408216129947-Download-and-Update-Databases).
 
 Add the following cronjob if you wish to stay up to date (replace `/path/to/`
-with your script path). It pulls latest updates every Wednesday at 06:00 AM.
+with your script path). It pulls latest updates every Wednesday and Saturday at 06:00 AM.
 
 ``
-0 6 * * 3 bash -c '/path/to/geoip2-haproxy-acl/generate.sh --license YOUR_MAXMIND_FREE_LICENSE_KEY --out /etc/haproxy/geoip2 && /bin/systemctl reload haproxy'
+0 6 * * 3,6 bash -c '/path/to/geoip2-haproxy-acl/generate.sh --accountid YOUR_MAXMIND_FREE_ACCOUNT_ID --license YOUR_MAXMIND_FREE_LICENSE_KEY --out /etc/haproxy/geoip2 && /bin/systemctl reload haproxy'
 ``
 
 ## License
