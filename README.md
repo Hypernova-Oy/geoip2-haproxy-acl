@@ -39,8 +39,8 @@ mkdir -p /etc/haproxy/geoip2
 acl acl_CN src -f /etc/haproxy/geoip2/CN.txt
 acl acl_US src -f /etc/haproxy/geoip2/US.txt
 
-http-request deny if !acl_CN
-http-request deny if !acl_US
+http-request deny if acl_CN
+http-request deny if acl_US
 ```
 
 The above example rejects connections from China and the United States.
